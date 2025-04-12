@@ -1,0 +1,26 @@
+{
+  "gianni": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "martins": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "gino": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "sara": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "paola": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "pippo": {
+    "password": "psw",
+    "isLogged": false
+  }
+}

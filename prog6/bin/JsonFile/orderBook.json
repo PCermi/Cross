@@ -1,0 +1,21 @@
+{
+  "askMap": {
+    "800": {
+      "size": 3,
+      "total": 2400,
+      "userList": [
+        {
+          "size": 3,
+          "username": "pippo",
+          "orderID": 4,
+          "timestamp": 1744383027
+        }
+      ]
+    }
+  },
+  "spread": 0,
+  "last_exchange": 0,
+  "lastOrderID": 5,
+  "stopOrders": [],
+  "bidMap": {}
+}
