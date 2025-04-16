@@ -5,8 +5,11 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Socket;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import GsonClasses.GsonTrade;
 
 public class UDPReceiverClient implements Runnable{
     public DatagramSocket socket;
@@ -28,21 +31,27 @@ public class UDPReceiverClient implements Runnable{
                 
                 // Attendo la ricezione di un pacchetto
                 socket.receive(receivePacket);
-                printer.printMessage("Ricevuto pacchetto da "+ receivePacket.getAddress() + " " + receivePacket.getPort());
                 
                 // Converto i dati ricevuti in una stringa
-                String jsonString = new String(
-                        receivePacket.getData(), 
-                        0, 
-                        receivePacket.getLength());
+                String jsonString = new String(receivePacket.getData(), 0, receivePacket.getLength());
 
-                // Estraggo il JsonObject dal pacchetto e stampo il messaggio
-                //JsonObject obj = JsonParser.parseString(jsonString).getAsJsonObject();
-                
-                printer.printMessage("Messaggio UDP ricevuto: " + jsonString);
+                // Deserializzao la stringa JSON in un oggetto GsonTrade
+                Gson gson = new Gson();
+                GsonTrade receivedTrade = gson.fromJson(jsonString, GsonTrade.class);
 
-                //Estraggo i valori
-                //if((obj.get("type")) != null){}
+                // Estraggo i valori
+                int orderID = receivedTrade.getOrderID();
+                String type = receivedTrade.getType();
+                String orderType = receivedTrade.getOrderType();
+                int size = receivedTrade.getSize();
+                int price = receivedTrade.getPrice();
+
+                // Stampo la stringa di notifica
+                if(size == 0 && price == 0){
+                    printer.printMessage("Your " + orderType + " order with ID "+ orderID + " of type " + type + " has been processed but has failed");
+                } else{
+                    printer.printMessage("Your " + orderType + " order with ID "+ orderID + " of type " + type + " has been processed with size " + size + " and price " + price);
+                }
 
             } catch(Exception e){
                 printer.printMessage("[UDPRECEIVER]: Error: " + e.getMessage() + "\nCause: %s" + e.getCause());

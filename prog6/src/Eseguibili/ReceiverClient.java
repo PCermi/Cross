@@ -53,24 +53,29 @@ public class ReceiverClient implements Runnable{
                         break;
 
                         case "logout":
-                            if(errorMessage.equals("OK")){
-                                printer.printMessage("[RECEIVER]: Logout completed. Thank you for using our service");
-                                SharedData.isClosed = true;
-                            }
+                            if(errorMessage.equals("OK"))
+                                System.out.println("[RECEIVER]: Logout completed. Thank you for using our service");
+                            else
+                                System.out.println(errorMessage);
+                            
+                            SharedData.isClosed = true;
                             System.exit(0);
                         break;
 
                         case "cancelOrder":
                             if(errorMessage.equals("OK"))
-                                printer.printMessage("[RECEIVER]: Cancellation not available for this order");
+                                printer.printMessage("[RECEIVER]: Cancellation completed for this order");
                             else
-                                printer.printMessage("[RECEIVER]: " + errorMessage);
+                                printer.printMessage("[RECEIVER]: Cancellation not available for this order");
+                        break;
+
+                        case "getPriceHistory":
+                            printer.printMessage(errorMessage);
                         break;
 
                         case "UDP":
                             int response = obj.get("response").getAsInt();
                             SharedData.UDPport = response;
-                            //printer.printMessage("ricevuta porta UDP del worker: " + SharedData.UDPport);
                         break;
                     }
                     printer.promptUser(); // Mostro il prompt per il comando successivo
@@ -80,14 +85,11 @@ public class ReceiverClient implements Runnable{
                     // ho ricevuto un messaggio di tipo GsonResponseOrder
 
                     int orderID = obj.get("orderID").getAsInt();
-                    if(orderID != -1){
+                    if(orderID != -1)
                         printer.printMessage("[RECEIVER]: your order ID is: " + orderID);
-                        printer.promptUser();
-                    }
-                    else{
+                    else
                         printer.printMessage("[RECEIVER]: Ops! Something went wrong");
-                        printer.promptUser();
-                    }
+                    printer.promptUser();
                 }
 
             }catch (Exception e){

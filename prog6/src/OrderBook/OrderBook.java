@@ -6,30 +6,29 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import GsonClasses.GsonTrade;
 import com.google.gson.Gson;
 
 import Eseguibili.SockMapValue;
 
-//import GsonClasses.GsonTrade;
+import GsonClasses.*;
 
+import java.io.PrintWriter;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 public class OrderBook {
     public ConcurrentSkipListMap<Integer,BookValue> askMap;
     public int spread;
-    public int last_exchange;
     public int lastOrderID = 0;
     public ConcurrentLinkedQueue<StopValue> stopOrders;
     public ConcurrentSkipListMap<Integer,BookValue> bidMap;
     
 
-    public OrderBook(ConcurrentSkipListMap<Integer,BookValue> askMap, int spread, int last_exchange, ConcurrentLinkedQueue<StopValue> stopOrders, ConcurrentSkipListMap<Integer,BookValue> bidMap){
+    public OrderBook(ConcurrentSkipListMap<Integer,BookValue> askMap, int spread, ConcurrentLinkedQueue<StopValue> stopOrders, ConcurrentSkipListMap<Integer,BookValue> bidMap){
         this.askMap = askMap;
         this.spread = spread;
-        this.last_exchange = last_exchange;
         this.bidMap = bidMap;
         this.stopOrders = stopOrders;
         updateOrderBook();
@@ -49,29 +48,28 @@ public class OrderBook {
                 break;
             }
         }
-        
-        System.out.printf("socket non creato. Porta: %d\n",port);
-        try(DatagramSocket sock = new DatagramSocket(port)){
-            System.out.println("socket creato");
+        if(port != 0 && address != null){
+            try(DatagramSocket sock = new DatagramSocket()){
+                GsonTrade trade = new GsonTrade(orderID,type,orderType,size,price);
 
-            GsonTrade trade = new GsonTrade(orderID,type,orderType,size,price);
+                // Serializzo l'oggetto GsonTrade in JSON
+                Gson gson = new Gson();
+                String json = gson.toJson(trade);
 
-            // Serializzo l'oggetto GsonTrade in JSON
-            Gson gson = new Gson();
-            String json = gson.toJson(trade);
+                // Converto il JSON in un array di byte
+                byte[] data = json.getBytes(StandardCharsets.UTF_8);
 
-            // Converto il JSON in un array di byte
-            byte[] data = json.getBytes("StandardCharsets.UTF_8");
+                // Creo un pacchetto Datagram con i dati e indirizzo del server
+                DatagramPacket packet = new DatagramPacket(data, data.length,address, port);
 
-            // Creo un pacchetto Datagram con i dati e indirizzo del server
-            DatagramPacket packet = new DatagramPacket(data, data.length,address, port);
+                // Invia il pacchetto
+                sock.send(packet);
 
-            // Invia il pacchetto
-            sock.send(packet);
-
-            System.out.println("Messaggio JSON inviato: " + json);
-        } catch (Exception e){
-            System.err.println("NotifyUser() Error: " + e.getMessage());
+            } catch (Exception e){
+                System.err.println("NotifyUser() Error: " + e.getMessage());
+            }
+        } else{
+            System.out.println("User not online, message not sent");
         }
     }
 
@@ -96,14 +94,14 @@ public class OrderBook {
                         ConcurrentLinkedQueue<String> list = getUsers(bidMap.get(bidMap.firstKey()).userList);
                         if(list.stream().anyMatch(s -> !s.equals(order.username))){
 
-                            int res = tryMarketOrder(order.type,order.size,order.username, socketMap);
+                            int res = tryMarketOrder(order.type,order.size,order.username,"stop", socketMap);
                             lastOrderID--; //decremento lastOrderID perchè ho già un orderID per lo stopOrder
                             if(res != -1){//l'ordine è stato processato
                                 System.out.printf("StopOrder di %s processato correttamente: %s\n",order.username, order.toString());
-                                //mando la notifica UDP al client che aveva inserito lo stopOrder (oppure la mando già quando chiamo la tryMarketOrder? Da decidere)
                             } else{
-                                //mando la notifica UDP al client che l'ordine non è andato a buon fine
                                 System.out.printf("StopOrder di %s processato ma fallito: %s\n",order.username, order.toString());
+                                
+                                notifyUser(socketMap, order.username, order.orderID, order.type, "stop", 0, 0);
                             }
                             iterator.remove();
                         }
@@ -116,14 +114,15 @@ public class OrderBook {
                         ConcurrentLinkedQueue<String> list = getUsers(askMap.get(askMap.firstKey()).userList);
                         if(list.stream().anyMatch(s -> !s.equals(order.username))){
 
-                            int res = tryMarketOrder(order.type,order.size,order.username, socketMap);
+                            int res = tryMarketOrder(order.type,order.size,order.username,"stop", socketMap);
                             lastOrderID--; //decremento lastOrderID perchè ho già un orderID per lo stopOrder
                             if(res != -1){//l'ordine è stato processato
                                 System.out.println("StopOrder processato correttamente: " + order.toString());
                                 //mando la notifica UDP al client che aveva inserito lo stopOrder (oppure la mando già quando chiamo la tryMarketOrder? Da decidere)
                             } else{
-                                //mando la notifica UDP al client che l'ordine non è andato a buon fine
                                 System.out.println("StopOrder processato ma fallito: " + order.toString());
+                                
+                                notifyUser(socketMap, order.username, order.orderID, order.type, "stop", 0, 0);
                             }
                             iterator.remove();
                         }
@@ -165,13 +164,11 @@ public class OrderBook {
             BookValue askValue = entry.getValue();
 
             if(askPrice <= price){// Questo prezzo fa match
-                System.out.printf("match tra map price: %d e price: %d\n",askPrice,price);
                 remainingSize = tryMatch(remainingSize,user,"bid",askValue.userList,"ask","limit",askPrice,orderID,socketMap);
-                System.out.printf("remainingSize: %d\n",remainingSize);
             }
 
             if(remainingSize == 0){// ordine completato
-                System.out.println("Order number "+orderID + "has been completed");
+                System.out.println("Order number "+ orderID + "has been completed");
                 updateOrderBook();
                 return orderID; //restituisco il numero dell'ordine
             }
@@ -179,7 +176,7 @@ public class OrderBook {
         //se sono qui l'ordine non è stato evaso completamente: devo caricarlo sull'orderBook
         if(remainingSize>0){
             loadBidOrder(remainingSize, price, user, orderID);
-            System.out.println("Order number "+orderID + "has been partially completed: the rest is in the orderBook");
+            System.out.println("Order number "+ orderID + "has been partially completed: the rest is in the orderBook");
         }
         updateOrderBook();
         return orderID;
@@ -217,9 +214,7 @@ public class OrderBook {
             BookValue bidValue = entry.getValue();
 
             if(bidPrice >= price){// Questo prezzo fa match
-                System.out.printf("match tra map price: %d e price: %d\n",bidPrice,price);
                 remainingSize = tryMatch(remainingSize,user, "ask" ,bidValue.userList,"bid","limit",bidPrice, orderID, socketMap);
-                System.out.printf("remainingSize: %d\n",remainingSize);
             }
 
             if(remainingSize == 0){// ordine completato
@@ -248,7 +243,7 @@ public class OrderBook {
                     IUser.size -= remainingSize; //decremento la size dell'utente della lista
                     
                     //notifico IUser con messaggio UDP: l'ordine è stato evaso parzialmente (remainingSize)
-                    notifyUser(socketMap, IUser.username,IUser.orderID,listType,orderType,remainingSize,price);
+                    notifyUser(socketMap, IUser.username,IUser.orderID,listType,"limit",remainingSize,price);
                     
                     //notifico user con messaggio UDP: l'ordine è stato evaso tutto
                     notifyUser(socketMap,user,orderID,userType,orderType,remainingSize,price);
@@ -259,7 +254,7 @@ public class OrderBook {
                     remainingSize -= IUser.size;
 
                     //notifico IUser con messaggio UDP: l'ordine è stato evaso tutto
-                    notifyUser(socketMap, IUser.username,IUser.orderID,listType,orderType,IUser.size,price);
+                    notifyUser(socketMap, IUser.username,IUser.orderID,listType,"limit",IUser.size,price);
 
                     //notifico user con messaggio UDP: l'ordine è stato evaso parzialmente (IUser.size)
                     notifyUser(socketMap,user,orderID,userType,orderType,IUser.size,price);
@@ -270,7 +265,7 @@ public class OrderBook {
                     iterator.remove(); //rimuovo l'utente dall lista
                     
                     //notifico IUser con messaggio UDP: l'ordine è stato evaso tutto
-                    notifyUser(socketMap, IUser.username,IUser.orderID,listType,orderType,IUser.size,price);
+                    notifyUser(socketMap, IUser.username,IUser.orderID,listType,"limit",IUser.size,price);
 
                     //notifico user con messaggio UDP: l'ordine è stato evaso tutto
                     notifyUser(socketMap,user,orderID,userType,orderType,remainingSize,price);
@@ -283,7 +278,7 @@ public class OrderBook {
     }
 
     // restituisce il nuovo orderID oppure -1
-    public int tryMarketOrder(String type, int size, String user, ConcurrentSkipListMap<String,SockMapValue> socketMap){
+    public int tryMarketOrder(String type, int size, String user, String orderType ,ConcurrentSkipListMap<String,SockMapValue> socketMap){
         int remainingSize = size;
         
         if(type.equals("ask")){ //ricevuto ask: devo matchare con bid
@@ -299,7 +294,7 @@ public class OrderBook {
                 int price = entry.getKey();
                 BookValue value = entry.getValue();
                 
-                remainingSize = tryMatch(remainingSize,user,"ask",value.userList,"bid","market",price,orderID,socketMap);
+                remainingSize = tryMatch(remainingSize,user,"ask",value.userList,"bid",orderType,price,orderID,socketMap);
 
                 if(remainingSize == 0){// ordine completato
                     updateOrderBook();
@@ -320,7 +315,7 @@ public class OrderBook {
                 int price = entry.getKey();
                 BookValue value = entry.getValue();
                 
-                remainingSize = tryMatch(remainingSize,user,"bid",value.userList,"ask","market",price,orderID,socketMap);
+                remainingSize = tryMatch(remainingSize,user,"bid",value.userList,"ask",orderType,price,orderID,socketMap);
 
                 //controllo comunque remainingSize perchè gli ordini caricati dallo stesso utente vengono ignorati
                 if(remainingSize == 0){// ordine completato
@@ -480,6 +475,6 @@ public class OrderBook {
     }
 
     public String toString(){
-        return "{ask_Section =" + askMap.toString() + ", spread =" + spread + ", last_exchange =" + last_exchange + ", bid_Section =" + bidMap.toString() + "}";
+        return "{ask_Section =" + askMap.toString() + ", spread =" + spread + ", bid_Section =" + bidMap.toString() + "}";
     }
 }

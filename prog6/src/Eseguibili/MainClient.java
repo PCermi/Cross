@@ -49,21 +49,19 @@ public class MainClient {
         "getPriceHistory\\s*\\(\\s*\\d+\\s*\\)",
         "help"
     };
-    private static String helpMessage = "- register(username, password)\n" + //
-                "- updateCredentials(username, currentPassword, newPassword)\n" + //
-                "- login(username, password)\n" + //
-                "- logout(username)\n" + //
-                "- insertLimitOrder(type, size, limitPrice)\n" + //
-                "- insertMarketOrder(type, size)\n" + //
-                "- insertStopOrder(type, size, stopPrice)\n" + //
-                "- cancelOrder(orderID)\n" + //
-                "- getPriceHistory(month)\n" + //
+    private static String helpMessage = "- register(username, password)\n" +
+                "- updateCredentials(username, currentPassword, newPassword)\n" +
+                "- login(username, password)\n" + 
+                "- logout()\n" + 
+                "- insertLimitOrder(type, size, limitPrice)\n" +
+                "- insertMarketOrder(type, size)\n" + 
+                "- insertStopOrder(type, size, stopPrice)\n" + 
+                "- cancelOrder(orderID)\n" + 
+                "- getPriceHistory(month)\n" + 
                 "- help - Show this help message";
     private static String userName;
     private static String password;
     private static String message;
-    private static String type;
-    private static int size;
 
 
     public static void main(String[] args) throws Exception{
@@ -104,10 +102,8 @@ public class MainClient {
                         switch(command[0]){
                             
                             case "register":
-                                if(command.length != 3) throw new Exception("Comando invalido\n");
                                 userName = command[1];
                                 password = command[2];
-                                
                                 
                                 //creazione file GSON da inviare al server
 
@@ -124,7 +120,6 @@ public class MainClient {
                                 String oldPassword = command[2];
                                 String newPassword = command[3];
 
-
                                 //creazione file GSON da inviare al server
 
                                 //definisco il messaggio
@@ -134,7 +129,6 @@ public class MainClient {
                                 //mando al server il messaggio dell'utente sullo stream out
                                 out.println(message);
                             break;
-                        
 
                             case "login":
                                 userName = command[1];
@@ -148,8 +142,10 @@ public class MainClient {
                                 //mando al server il messaggio dell'utente sullo stream out
                                 out.println(message);
 
-                                //mando al server il messaggio UDP per farli avere la porta del client
+                                //mando al server il messaggio UDP per fargli avere la porta del client
+                                while(!SharedData.isLogged){}
                                 sendUDPmessage(UDPsocket,printer);
+                                
                             break;
 
                             case "logout":
@@ -157,10 +153,9 @@ public class MainClient {
                                 //definisco il messaggio
                                 mes = new GsonMessage<>("logout", new Values());
                                 message = gson.toJson(mes); // definisco l'oggetto Gson da mandare
-
                                 //mando al server il messaggio dell'utente sullo stream out
                                 out.println(message);
-
+                                
                                 //quando il receiver mette la variabile a true chiudo il client
                                 while(!SharedData.isClosed){}
                                 System.exit(0);
@@ -171,11 +166,14 @@ public class MainClient {
                                 int size = Integer.parseInt(command[2]);
                                 int limitPrice = Integer.parseInt(command[3]);
 
-                                if(limitPrice <= 0){System.out.println("invalid LimitPrice");}
-                                else{
+                                if(limitPrice <= 0){
+                                    printer.printMessage("invalid LimitPrice");
+                                    printer.promptUser();
+                                } else {
                                     if(!SharedData.isLogged){
-                                        System.out.println("You're not logged");
-                                    } else{
+                                        printer.printMessage("You're not logged");
+                                        printer.promptUser();
+                                    } else {
                                         //creazione file GSON da inviare al server
                                         //definisco il messaggio
                                         mes = new GsonMessage<>("insertLimitOrder", new GsonLimitStopOrder(type, size, limitPrice));
@@ -192,7 +190,8 @@ public class MainClient {
                                 size = Integer.parseInt(command[2]);
 
                                 if(!SharedData.isLogged){
-                                    System.out.println("You're not logged");
+                                    printer.printMessage("You're not logged");
+                                    printer.promptUser();
                                 } else{
                                     //creazione file GSON da inviare al server
                                     //definisco il messaggio
@@ -209,10 +208,14 @@ public class MainClient {
                                 size = Integer.parseInt(command[2]);
                                 int stopPrice = Integer.parseInt(command[3]);
 
-                                if(stopPrice <= 0) {System.out.println("invalid stopPrice");}
+                                if(stopPrice <= 0){
+                                    printer.printMessage("invalid stopPrice");
+                                    printer.promptUser();
+                                }
                                 else{
                                     if(!SharedData.isLogged){
-                                        System.out.println("You're not logged");
+                                        printer.printMessage("You're not logged");
+                                        printer.promptUser();
                                     } else{
                                         //creazione file GSON da inviare al server
                                         //definisco il messaggio
@@ -226,13 +229,13 @@ public class MainClient {
                             break;
 
                             case "cancelOrder":
-                                //cancelOrder(orderID)
                                 int orderID = Integer.parseInt(command[1]);
                                 GsonResponseOrder obj = new GsonResponseOrder();
                                 obj.setResponseOrder(orderID);
 
                                 if(!SharedData.isLogged){
-                                    System.out.println("You're not logged");
+                                    printer.printMessage("You're not logged");
+                                    printer.promptUser();
                                 } else{
                                     //creazione file GSON da inviare al server
                                     //definisco il messaggio
@@ -257,7 +260,8 @@ public class MainClient {
                                     if(month > 0 || month <= 12 || year <= 2025){
                                        
                                         if(!SharedData.isLogged){
-                                            System.out.println("You're not logged");
+                                            printer.printMessage("You're not logged");
+                                            printer.promptUser();
                                         } else{
                                             //creazione file GSON da inviare al server
                                             //definisco il messaggio
@@ -267,29 +271,35 @@ public class MainClient {
                                             //mando al server il messaggio dell'utente sullo stream out
                                             out.println(message); 
                                         }
-        
-                                        //dobbiamo accedere SOLO al file dato dalla prof
 
                                     } else{
-                                        System.out.println("incorrect month or year");
+                                        printer.printMessage("incorrect month or year");
+                                        printer.promptUser();
                                     }
                                 } else{
-                                    System.out.println("incorrect date format: use MMYYYY");
+                                    printer.printMessage("incorrect date format: use MMYYYY");
+                                    printer.promptUser();
                                 }
                             break;
 
                             case "help":
-                                System.out.println(helpMessage);
+                                printer.printMessage(helpMessage);
+                                printer.promptUser();
                             break;
                         }
-                    } else System.out.println("Comando non valido. Riprova.");
+                    } else{
+                        System.out.println("Comando non valido. Riprova.");
+                        printer.promptUser();
+                    }
                 }catch (Exception e){
-                    System.err.println(e.getMessage() + e.getClass());
+                    System.err.println("[MAINCLIENT]" + e.getMessage() + e.getClass());
+                    printer.promptUser();
                 }
                 
             }
         }catch(Exception e){
             System.out.println("[MAINCLIENT]: Error " + e.getMessage());
+            printer.promptUser();
         }
     }
 

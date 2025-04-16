@@ -26,7 +26,7 @@ public class MainServer{
     public static ConcurrentSkipListMap <Integer, BookValue> askMap = new ConcurrentSkipListMap<>(); // le chiavi sono in ordine crescente: dal più basso al più alto
     public static ConcurrentSkipListMap <Integer, BookValue> bidMap = new ConcurrentSkipListMap<>(Collections.reverseOrder()); // le chiavi sono in ordine decrescente: dal più alto al più basso
     public static ConcurrentLinkedQueue<StopValue> stopOrders;
-    public static OrderBook orderBook = new OrderBook(askMap, 0, 0, new ConcurrentLinkedQueue<StopValue>(), bidMap);
+    public static OrderBook orderBook = new OrderBook(askMap, 0, new ConcurrentLinkedQueue<StopValue>(), bidMap);
 
 
     
@@ -128,8 +128,6 @@ public class MainServer{
                     reader.endObject();
                 } else if (name.equals("spread")){
                     orderBook.spread = reader.nextInt();
-                } else if (name.equals("last_exchange")){
-                    orderBook.last_exchange = reader.nextInt();
                 } else if(name.equals("lastOrderID")){
                     orderBook.lastOrderID = reader.nextInt();
                 } else if(name.equals("stopOrders")){

@@ -55,7 +55,6 @@ public class Worker implements Runnable{
 
         //apro la comunicazione UDP per poter fare la receive nella sezione di login per estrarre porta e IP del cliente loggato
         try(DatagramSocket UDPsocket = new DatagramSocket(UDPport)){
-            System.out.println("UDPport: " + UDPport);
         
             //definisco i canali di input e output TCP e il datagramSocket per UDP
             try( BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));PrintWriter out = new PrintWriter(clientSocket.getOutputStream(),true)){
@@ -63,6 +62,7 @@ public class Worker implements Runnable{
                 //mando un messaggio TCP al client contenente la porta e l'address del suo worker: riuso la struttura json GsonResponse
                 response.setResponse("UDP",UDPport,"");
                 response.sendMessage(gson,out);
+
 
                 while(true){
                     //aspetto un messaggio dal client
@@ -207,6 +207,24 @@ public class Worker implements Runnable{
                                                 // comunico al client
                                                 response.setResponse("login",100,"OK");
                                                 response.sendMessage(gson,out);
+
+                                                //Ricevo il pacchetto UDP dal client ed estraggo la porta e l'indirizzo
+                                                byte[] buffer = new byte[1];
+                                                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                                                UDPsocket.receive(packet);
+
+                                                //estraggo indirizzo e porta del cliente e li aggiungo alla mappa
+                                                clientPort = packet.getPort();
+                                                clientAddress = packet.getAddress();
+
+                                                SockMapValue newValue = new SockMapValue(clientPort, clientAddress);
+                                                if(socketMap.containsKey(onlineUser))
+                                                    socketMap.replace(onlineUser, newValue);
+                                                else
+                                                    socketMap.put(onlineUser,newValue);
+
+                                                //System.out.println("SocketMap: " + socketMap.toString());
+
                                             } else{
                                                 response.setResponse("login",103,"you are already logged in with another account with username " + onlineUser);
                                                 response.sendMessage(gson,out);
@@ -225,35 +243,21 @@ public class Worker implements Runnable{
                                 response.sendMessage(gson,out);
                             }
 
-                            //Ricevo il pacchetto UDP dal client ed estraggo la porta e l'indirizzo
-                            byte[] buffer = new byte[1];
-                            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                            UDPsocket.receive(packet);
-
-                            //estraggo indirizzo e porta del cliente e li aggiungo alla mappa
-                            clientPort = packet.getPort();
-                            clientAddress = packet.getAddress();
-
-                            SockMapValue newValue = new SockMapValue(clientPort, clientAddress);
-                            if(socketMap.containsKey(onlineUser))
-                                socketMap.replace(onlineUser, newValue);
-                            else
-                                socketMap.put(onlineUser,newValue);
-
-                            System.out.println("SocketMap: " + socketMap.toString());
                         break;
 
                         case "logout":
                             // Per logout, values non avrà nessun valore
                             valuesObj = obj.getAsJsonObject("values");
                             values = new Gson().fromJson(valuesObj, Values.class);
-
+                            
                             try{
                                 if(onlineUser == null){
-                                    response.setResponse("logout",103,"you are not logged in");
+                                    System.out.println("user not logged has requested logout");
+                                    response.setResponse("logout",101,"Closing comunication...Bye!");
                                     response.sendMessage(gson,out);
-                                } else if((userMap.get(onlineUser)).getLogged()){
+                                } else {
                                     //l'utente è loggato
+                                    System.out.println(onlineUser + " has requested logout");
 
                                     //modifico la userMap
                                     userMap.replace(onlineUser, new Tupla(password, false));
@@ -262,16 +266,13 @@ public class Worker implements Runnable{
                                     updateJsonUsermap(userMap);
 
                                     //comunico al client
-                                    response.setResponse("logout",101,"OK");
+                                    response.setResponse("logout",100,"OK");
                                     response.sendMessage(gson,out);
 
-                                    //CHIUDO COMUNICAZIONE
-                                    clientSocket.close();
-                                    return;
-                                } else{
-                                    response.setResponse("logout",103,"you are not logged in");
-                                    response.sendMessage(gson,out);
                                 }
+                                //CHIUDO COMUNICAZIONE
+                                clientSocket.close();
+                                return;
                             } catch (Exception e){
                                 response.setResponse("logout",103,e.getMessage());
                                 response.sendMessage(gson,out);
@@ -295,11 +296,6 @@ public class Worker implements Runnable{
                                     orderID = orderBook.newTryAskOrder(size,price,onlineUser,socketMap);
                                 else // ORDINE DI BID: ACQUISTO
                                     orderID = orderBook.newTryBidOrder(size, price, onlineUser, socketMap);
-                                
-                                System.out.println("orderBook: " + orderBook.toString());
-
-                                if(!orderBook.stopOrders.isEmpty())
-                                    System.out.println("stopOrders prima del check: " + orderBook.stopOrders.toString());
 
                                 //controllo la lista degli StopOrder
                                 orderBook.checkStopOrders(socketMap);
@@ -336,7 +332,7 @@ public class Worker implements Runnable{
                             size = valuesObj.get("size").getAsInt();
 
                             //eseguo il market order
-                            int res = orderBook.tryMarketOrder(type,size,onlineUser,socketMap);
+                            int res = orderBook.tryMarketOrder(type,size,onlineUser,"market",socketMap);
 
                             //controllo la lista degli StopOrder
                             orderBook.checkStopOrders(socketMap);
@@ -429,31 +425,31 @@ public class Worker implements Runnable{
                             }
                         break;
                     } //fine switch
-                    //System.out.printf("\n[WORKER %s] userMap: " + userMap,Thread.currentThread().getName()); 
                 }
             } catch (Exception e){ //fine try with resource TCP
-                System.err.printf("[WORKER]: Errore Messaggio ricevuto: %s %s\n",e.getMessage(),e.getCause());
+                System.err.printf("[WORKER] Error in try TCP: %s %s\n",e.getMessage(),e.getCause());
             }
         } catch (IOException e) { //fine try with resource UDP
-            System.err.println("Errore nella ricezione dell'intero via UDP: " + e.getMessage());
+            System.err.println("[Worker] Error in try UDP: " + e.getMessage());
         }
     }
 
     public String readHistory(String date){
         String monthPassed = date.substring(0, 2);
+        StringBuilder result = new StringBuilder();
 
-        int openingPrice;
-        int closingPrice;
-        int maxPrice;
-        int minimumPrice;
+        //definisco una mappa per memorizzare i dati di ogni giorno
+        ConcurrentSkipListMap<String,DailyParameters> daysMap = new ConcurrentSkipListMap<>();
 
         try(JsonReader reader = new JsonReader(new FileReader("src/JsonFile/storicoOrdini.json"))) {
             Gson gson = new Gson();
 
             // Creo un formato per la data
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+            //SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
             // Formato per estrarre solo il mese
             SimpleDateFormat monthFormat = new SimpleDateFormat("MM");
+            // Formato per estrarre solo la data senza ora
+            SimpleDateFormat dayFormat = new SimpleDateFormat("dd/MM/yyyy");
             
             // Leggiamo l'oggetto JSON principale
             reader.beginObject();
@@ -466,7 +462,7 @@ public class Worker implements Runnable{
                     reader.beginArray();
                     
                     while (reader.hasNext()){
-                        // Deserializziamo ciascun trade come un oggetto Trade
+                        // Deserializziamo ciascun trade come un oggetto GsonHistoryOrder
                         GsonHistoryOrder trade = gson.fromJson(reader, GsonHistoryOrder.class);
 
                         // Creiamo un oggetto Date dal timestamp
@@ -479,12 +475,16 @@ public class Worker implements Runnable{
                         if (month.equals(monthPassed)){
 
                             // Convertiamo il timestamp in formato data leggibile
-                            String formattedDate = sdf.format(tradeDate);
+                            String dayKey = dayFormat.format(tradeDate);
                             
-                            // Stampiamo le informazioni del trade con la data formattata
-                            String tradeInfo = String.format("OrderID: %d, Type: %s, OrderType: %s, Size: %d, Price: %d, Date: %s",trade.orderId,trade.type,trade.orderType,trade.size,trade.price,formattedDate);
-
-                            return tradeInfo;
+                            // Aggiorna i dati giornalieri
+                            if(!daysMap.containsKey(dayKey)){
+                                // Primo trade del giorno
+                                daysMap.put(dayKey, new DailyParameters(dayKey, trade.price, trade.timestamp));
+                            } else {
+                                // Aggiorna i dati esistenti
+                                daysMap.get(dayKey).updatePrices(trade.price, trade.timestamp);
+                            }
                         }
                     }
                     reader.endArray();
@@ -494,30 +494,21 @@ public class Worker implements Runnable{
                 }
             }
             reader.endObject();
+
+            //Aggiungo al risultato i dati giornalieri
+            result.append("\n=== DATI GIORNALIERI ===\n");
+            for(Map.Entry<String,DailyParameters> entry : daysMap.entrySet()){
+                DailyParameters param = entry.getValue();
+                result.append(String.format("Data: %s, OpenPrice: %d, MaxPrice: %d, MinPrice: %d, ClosePrice: %d\n", 
+                entry.getKey(), param.openPrice, param.highPrice, 
+                param.lowPrice, param.closePrice));
+            }
     
         } catch (Exception e){
             System.err.printf("[WORKER]: Errore Messaggio ricevuto: %s %s\n",e.getMessage(),e.getCause());
         }
-        return "";
+        return result.toString();
     }
-
-    //funzione per mandare la notifica UDP al cliente il cui ordine è stato processato
-    /*public static void sendUDPmessage(UserBook user, DatagramSocket sock,GsonTrade obj){
-        try{
-            //estraggo la porta e l'address dal socket passato
-            int port = sock.getLocalPort();
-            InetAddress address = sock.getLocalAddress();
-
-            // Converti JSON in byte array
-            byte[] sendData = obj.toString().getBytes();
-
-            // Crea e invia il pacchetto UDP
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, address, port);
-            sock.send(sendPacket);
-        } catch(Exception e){
-            System.err.println("[SEND_UDP_MESSAGE]: " + e.getMessage());
-        }
-    }*/
 
     public static boolean isValid(String str) {
         if (str == null || str.isEmpty()) {

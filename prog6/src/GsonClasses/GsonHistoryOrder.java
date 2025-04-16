@@ -5,6 +5,6 @@ public class GsonHistoryOrder{
     public String type;
     public String orderType;
     public int size;
-    public long price;
+    public int price;
     public long timestamp;
 }

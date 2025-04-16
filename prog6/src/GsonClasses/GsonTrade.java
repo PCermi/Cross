@@ -18,4 +18,24 @@ public class GsonTrade{
         this.price = price;
         this.timestamp = Instant.now().getEpochSecond();
     }
+
+    public int getOrderID(){
+        return orderId;
+    }
+
+    public String getType(){
+        return type;
+    }
+
+    public String getOrderType(){
+        return orderType;
+    }
+
+    public int getSize(){
+        return size;
+    }
+
+    public int getPrice(){
+        return price;
+    }
 }
