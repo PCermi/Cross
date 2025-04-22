@@ -3,22 +3,9 @@ package Eseguibili;
 import java.io.*;
 import java.util.*;
 import java.net.*;
-import java.nio.ByteBuffer;
-
-//import GsonClasses.*;
 import com.google.gson.Gson;
-//import com.google.gson.Gson;
-//import com.google.gson.GsonBuilder;
 
-import GsonClasses.GsonCredentials;
-import GsonClasses.GsonAskHistory;
-import GsonClasses.GsonLimitStopOrder;
-import GsonClasses.GsonMarketOrder;
-import GsonClasses.GsonMessage;
-import GsonClasses.GsonResponseOrder;
-import GsonClasses.GsonUser;
-import GsonClasses.Values;
-
+import GsonClasses.*;
 
 public class MainClient {
     //socket e stream
@@ -34,6 +21,7 @@ public class MainClient {
     private static GsonMessage<Values> mes;
 
     //flags
+    private static boolean udpMessage = false; //flag per mandare il messaggio UDP del login una sola volta
     
     
     //variabili
@@ -63,8 +51,16 @@ public class MainClient {
     private static String password;
     private static String message;
 
+    public static class SharedData{
+        public volatile boolean isLogged = false;
+        public volatile boolean isClosed = false;
+        public volatile boolean loginError = false;
+        public volatile int UDPport = 0;
+    }
 
     public static void main(String[] args) throws Exception{
+        SharedData sharedData = new SharedData();
+
         readConfig(); //leggo le variabili dal file di configurazione
 
         //creo il thread per stampare sulla CLI
@@ -80,18 +76,19 @@ public class MainClient {
             out = new PrintWriter(TCPsocket.getOutputStream(),true);
     
             //creo il thread per ricevere i messaggi TCP
-            Thread receiver = new Thread (new ReceiverClient(TCPsocket,in,printer));
+            Thread receiver = new Thread (new ReceiverClient(TCPsocket,in,printer,sharedData));
             receiver.start();
             
             System.out.println("Welcome, here's what you can do\n" + helpMessage);
 
-            SharedData.isLogged = false;
+            sharedData.isLogged = false;
             
             while(true){
 
                 try{
                     //leggo da riga di comando e suddivido il comando letto inserendo ogni parola in una cella di command
                     String input = scanner.nextLine();
+                    System.out.println("input: " + input);
                     printer.inputReceived(); // Indica che l'input è stato ricevuto
 
                     if (isValidCommand(input)){
@@ -143,9 +140,18 @@ public class MainClient {
                                 out.println(message);
 
                                 //mando al server il messaggio UDP per fargli avere la porta del client
-                                while(!SharedData.isLogged){}
-                                sendUDPmessage(UDPsocket,printer);
-                                
+                                while(!udpMessage){
+                                    if(sharedData.isLogged == true){
+                                        sendUDPmessage(UDPsocket,printer,sharedData);
+                                        System.out.println("messaggio UDP mandato");
+                                        udpMessage = true;
+                                    }
+                                    
+                                    if(sharedData.loginError == true){
+                                        System.out.println("ricevuto messaggio errore");
+                                        break;
+                                    }
+                                }
                             break;
 
                             case "logout":
@@ -157,25 +163,27 @@ public class MainClient {
                                 out.println(message);
                                 
                                 //quando il receiver mette la variabile a true chiudo il client
-                                while(!SharedData.isClosed){}
+                                while(!sharedData.isClosed){}
                                 System.exit(0);
                             break;
 
                             case "insertLimitOrder":
-                                String type = command[1];
+                                String type = command[1].toLowerCase();
                                 int size = Integer.parseInt(command[2]);
                                 int limitPrice = Integer.parseInt(command[3]);
 
-                                if(limitPrice <= 0){
+                                if(limitPrice <= 0 || limitPrice > Math.pow(2, 31)-1){
                                     printer.printMessage("invalid LimitPrice");
                                     printer.promptUser();
+                                } else if(size >  Math.pow(2, 31)-1){
+                                    printer.printMessage("invalid Size");
+                                    printer.promptUser();
                                 } else {
-                                    if(!SharedData.isLogged){
+                                    if(!sharedData.isLogged){
                                         printer.printMessage("You're not logged");
                                         printer.promptUser();
                                     } else {
                                         //creazione file GSON da inviare al server
-                                        //definisco il messaggio
                                         mes = new GsonMessage<>("insertLimitOrder", new GsonLimitStopOrder(type, size, limitPrice));
                                         message = gson.toJson(mes); // definisco l'oggetto Gson da mandare
 
@@ -186,34 +194,41 @@ public class MainClient {
                             break;
 
                             case "insertMarketOrder":
-                                type = command[1];
+                                type = command[1].toLowerCase();
                                 size = Integer.parseInt(command[2]);
 
-                                if(!SharedData.isLogged){
-                                    printer.printMessage("You're not logged");
+                                if(size >  Math.pow(2, 31)-1){
+                                    printer.printMessage("invalid Size");
                                     printer.promptUser();
                                 } else{
-                                    //creazione file GSON da inviare al server
-                                    //definisco il messaggio
-                                    mes = new GsonMessage<>("insertMarketOrder", new GsonMarketOrder(type, size));
-                                    message = gson.toJson(mes); // definisco l'oggetto Gson da mandare
+                                    if(!sharedData.isLogged){
+                                        printer.printMessage("You're not logged");
+                                        printer.promptUser();
+                                    } else{
+                                        //creazione file GSON da inviare al server
+                                        //definisco il messaggio
+                                        mes = new GsonMessage<>("insertMarketOrder", new GsonMarketOrder(type, size));
+                                        message = gson.toJson(mes); // definisco l'oggetto Gson da mandare
 
-                                    //mando al server il messaggio dell'utente sullo stream out
-                                    out.println(message);
+                                        //mando al server il messaggio dell'utente sullo stream out
+                                        out.println(message);
+                                    }
                                 }
                             break;
                             
                             case "insertStopOrder":
-                                type = command[1];
+                                type = command[1].toLowerCase();
                                 size = Integer.parseInt(command[2]);
                                 int stopPrice = Integer.parseInt(command[3]);
 
-                                if(stopPrice <= 0){
+                                if(stopPrice <= 0 || stopPrice > Math.pow(2, 31)-1){
                                     printer.printMessage("invalid stopPrice");
                                     printer.promptUser();
-                                }
-                                else{
-                                    if(!SharedData.isLogged){
+                                } else if(size >  Math.pow(2, 31)-1){
+                                    printer.printMessage("invalid Size");
+                                    printer.promptUser();
+                                } else {
+                                    if(!sharedData.isLogged){
                                         printer.printMessage("You're not logged");
                                         printer.promptUser();
                                     } else{
@@ -233,7 +248,7 @@ public class MainClient {
                                 GsonResponseOrder obj = new GsonResponseOrder();
                                 obj.setResponseOrder(orderID);
 
-                                if(!SharedData.isLogged){
+                                if(!sharedData.isLogged){
                                     printer.printMessage("You're not logged");
                                     printer.promptUser();
                                 } else{
@@ -241,8 +256,6 @@ public class MainClient {
                                     //definisco il messaggio
                                     mes = new GsonMessage<>("cancelOrder", obj);
                                     message = gson.toJson(mes); // definisco l'oggetto Gson da mandare
-
-                                    System.out.println("cancelOrder message: " + message.toString());
 
                                     //mando al server il messaggio dell'utente sullo stream out
                                     out.println(message); 
@@ -259,7 +272,7 @@ public class MainClient {
 
                                     if(month > 0 || month <= 12 || year <= 2025){
                                        
-                                        if(!SharedData.isLogged){
+                                        if(!sharedData.isLogged){
                                             printer.printMessage("You're not logged");
                                             printer.promptUser();
                                         } else{
@@ -303,13 +316,13 @@ public class MainClient {
         }
     }
 
-    public static void sendUDPmessage(DatagramSocket UDPsocket, Printer printer){
+    public static void sendUDPmessage(DatagramSocket UDPsocket, Printer printer,SharedData sharedData){
         //ogni client apre la connessione UDP e manda un messaggio al server in modo possa estrarre la porta
         try{
             InetAddress address = InetAddress.getByName(hostname);
 
             // Creo il pacchetto UDP e lo invio al server
-            DatagramPacket packet = new DatagramPacket(new byte[1], 1, address, SharedData.UDPport);
+            DatagramPacket packet = new DatagramPacket(new byte[1], 1, address, sharedData.UDPport);
             UDPsocket.send(packet);
 
             //creo il thread per ricevere i messaggi UDP
@@ -318,6 +331,7 @@ public class MainClient {
 
         }catch (IOException e) {
             System.err.println("Errore nell'invio del messaggio UDP: " + e.getMessage());
+            printer.promptUser();
         }
     }
 

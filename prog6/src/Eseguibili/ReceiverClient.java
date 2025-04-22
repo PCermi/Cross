@@ -5,21 +5,26 @@ import java.net.*;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import Eseguibili.MainClient.SharedData;
+
 
 public class ReceiverClient implements Runnable{
     public Socket serverSock;
     public BufferedReader in;
     public Printer printer;
+    public SharedData sharedData;
 
-    public ReceiverClient(Socket servSock,BufferedReader in, Printer printer){
+    public ReceiverClient(Socket servSock,BufferedReader in, Printer printer, SharedData sharedData){
         this.serverSock = servSock;
         this.in = in;
         this.printer = printer;
+        this.sharedData = sharedData;
     }
 
     public void run(){
         while(true){
             try{
+
                 //aspetto un messaggio dal client
                 String line = in.readLine();
                 //leggo l'oggetto e lo parso ad un JsonObject
@@ -39,10 +44,13 @@ public class ReceiverClient implements Runnable{
 
                         case "login":
                             if(errorMessage.equals("OK")){
-                                SharedData.isLogged = true;
+                                sharedData.isLogged = true;
+                                sharedData.loginError = false;
                                 printer.printMessage("[RECEIVER]: Login completed successfully");
-                            } else
+                            } else{
+                                sharedData.loginError = true;
                                 printer.printMessage("[RECEIVER]: " + errorMessage);
+                            }
                         break;
 
                         case "updateCredentials":
@@ -58,7 +66,7 @@ public class ReceiverClient implements Runnable{
                             else
                                 System.out.println(errorMessage);
                             
-                            SharedData.isClosed = true;
+                            sharedData.isClosed = true;
                             System.exit(0);
                         break;
 
@@ -75,11 +83,16 @@ public class ReceiverClient implements Runnable{
 
                         case "UDP":
                             int response = obj.get("response").getAsInt();
-                            SharedData.UDPport = response;
+                            sharedData.UDPport = response;
+                        break;
+
+                        case "disconnection":
+                            System.out.println(errorMessage);
+                            sharedData.isClosed = true;
+                            System.exit(0);
                         break;
                     }
                     printer.promptUser(); // Mostro il prompt per il comando successivo
-                    
 
                 } else if((obj.get("orderID")) != null){
                     // ho ricevuto un messaggio di tipo GsonResponseOrder

@@ -1,14 +1,8 @@
 package Eseguibili;
 
 import java.io.BufferedReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.Socket;
-
+import java.net.*;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import GsonClasses.GsonTrade;
 
 public class UDPReceiverClient implements Runnable{
