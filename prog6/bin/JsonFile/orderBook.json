@@ -1,7 +1,76 @@
 {
   "askMap": {},
-  "spread": 0,
-  "lastOrderID": 3,
-  "stopOrders": [],
-  "bidMap": {}
+  "spread": 5000,
+  "lastOrderID": 80,
+  "stopOrders": [
+    {
+      "type": "bid",
+      "size": 10,
+      "username": "gino",
+      "orderID": 79,
+      "stopPrice": 5000
+    }
+  ],
+  "bidMap": {
+    "5000": {
+      "size": 5,
+      "total": 25000,
+      "userList": [
+        {
+          "size": 5,
+          "username": "gianni",
+          "orderID": 74,
+          "date": "30/04/2025 17:32:51"
+        }
+      ]
+    },
+    "2000": {
+      "size": 10,
+      "total": 20000,
+      "userList": [
+        {
+          "size": 10,
+          "username": "gino",
+          "orderID": 41,
+          "date": "30/04/2025 15:52:04"
+        }
+      ]
+    },
+    "801": {
+      "size": 8,
+      "total": 6408,
+      "userList": [
+        {
+          "size": 8,
+          "username": "pino",
+          "orderID": 46,
+          "date": "30/04/2025 16:08:54"
+        }
+      ]
+    },
+    "500": {
+      "size": 10,
+      "total": 5000,
+      "userList": [
+        {
+          "size": 10,
+          "username": "gianni",
+          "orderID": 72,
+          "date": "30/04/2025 17:31:14"
+        }
+      ]
+    },
+    "200": {
+      "size": 10,
+      "total": 2000,
+      "userList": [
+        {
+          "size": 10,
+          "username": "gino",
+          "orderID": 80,
+          "date": "30/04/2025 19:09:03"
+        }
+      ]
+    }
+  }
 }

@@ -1,4 +1,6 @@
 package GsonClasses;
+
+// Classe utilizzata per definire la struttura dei messaggi che il client invia al server
 public class GsonMessage <T extends Values>{
     public String operation;
     public T values;
@@ -8,7 +10,7 @@ public class GsonMessage <T extends Values>{
         this.values = values;
     }
     
-    public String toString() {
-        return "{operation='" + this.operation + "', values='" + this.values.toString() + "}";
+    public String toString(){
+        return "{ operation = " + this.operation + ", values = " + this.values.toString() + " }";
     }
 }

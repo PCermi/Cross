@@ -1,5 +1,6 @@
 package OrderBook;
 
+// Classe utilizzata per rappresentare gli oggetti contenuti nella lista degli stopOrders
 public class StopValue{
     public String type;
     public int size;

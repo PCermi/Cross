@@ -9,9 +9,13 @@
   },
   "gino": {
     "password": "psw",
-    "isLogged": false
+    "isLogged": true
   },
   "sara": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "pluto": {
     "password": "psw",
     "isLogged": false
   },
@@ -20,6 +24,10 @@
     "isLogged": false
   },
   "pippo": {
+    "password": "psw",
+    "isLogged": false
+  },
+  "pino": {
     "password": "psw",
     "isLogged": false
   }
