@@ -81,8 +81,7 @@ public class OrderBook {
             result.add(user.username);
         }
         return result;
-    }
-    
+    } 
 
     // Metodo che controlla tutti gli stopOrder per verificare se qualcuno di essi debba essere eseguito in base ai prezzi di mercato correnti.
     public synchronized void checkStopOrders(ConcurrentSkipListMap<String,SockMapValue> socketMap){
@@ -159,7 +158,7 @@ public class OrderBook {
 
     /* Metodo per elaborare un limitOrder di tipo bid.
     Il metodo cerca corrispondenze nella askMap eseguendo l'algoritmo tryMatch e carica parzialmente o totalmente l'ordine nella bidMap se non viene soddisfatto.*/
-    public int newTryBidOrder(int size, int price, String user, ConcurrentSkipListMap<String,SockMapValue> socketMap){
+    public int tryBidOrder(int size, int price, String user, ConcurrentSkipListMap<String,SockMapValue> socketMap){
         int remainingSize = size;
         int orderID = updateLastOrderID();
 
@@ -172,15 +171,21 @@ public class OrderBook {
             }
 
             if(remainingSize == 0){// Ordine completato
-                System.out.println("Order number "+ orderID + "has been completed");
+                System.out.println("Order number "+ orderID + " has been completed");
                 updateOrderBook();
                 return orderID; // Viene restituito il numero dell'ordine
             }
         }
         // L'ordine non è stato evaso completamente: deve essere caricato sull'orderBook
-        if(remainingSize>0){
+        if(remainingSize > 0){
             loadBidOrder(remainingSize, price, user, orderID);
-            System.out.println("Order number "+ orderID + " was partially completed; the remaining size of " + remainingSize + " was added to the orderBook");
+            if(remainingSize == size){
+                // L'ordine non è stato matchato
+                System.out.println("Order number "+ orderID + " unmatched: " + remainingSize + " placed in the orderBook");
+            } else{
+                // L'ordine è stato evaso parzialmente
+                System.out.println("Order number "+ orderID + " was partially completed; the remaining size of " + remainingSize + " was added to the orderBook");
+            }
         }
         updateOrderBook();
         return orderID;
@@ -211,7 +216,7 @@ public class OrderBook {
 
     /* Metodo per elaborare un limitOrder di tipo ask.
     Il metodo cerca corrispondenze nella bidMap eseguendo l'algoritmo tryMatch e carica parzialmente o totalmente l'ordine nella askMap se non viene soddisfatto.*/
-    public int newTryAskOrder(int size, int price, String user, ConcurrentSkipListMap<String,SockMapValue> socketMap){
+    public int tryAskOrder(int size, int price, String user, ConcurrentSkipListMap<String,SockMapValue> socketMap){
         int remainingSize = size;
         int orderID = updateLastOrderID();
 
@@ -224,15 +229,21 @@ public class OrderBook {
             }
 
             if(remainingSize == 0){// Ordine completato
-                System.out.println("Order number "+orderID + "has been completed");
+                System.out.println("Order number "+orderID + " has been completed");
                 updateOrderBook();
                 return orderID; // Viene restituito il numero dell'ordine
             }
         }
         // L'ordine non è stato evaso completamente: deve essere caricato sull'orderBook
-        if(remainingSize>0){
+        if(remainingSize > 0){
             loadAskOrder(remainingSize, price, user, orderID);
-            System.out.println("Order number "+ orderID + " was partially completed; the remaining size of " + remainingSize + " was added to the orderBook");
+            if(remainingSize == size){
+                // L'ordine non è stato matchato
+                System.out.println("Order number "+ orderID + " unmatched: " + remainingSize + " placed in the orderBook");
+            } else{
+                // L'ordine è stato evaso parzialmente
+                System.out.println("Order number "+ orderID + " was partially completed; the remaining size of " + remainingSize + " was added to the orderBook");
+            }
         }
         updateOrderBook();
         return orderID;

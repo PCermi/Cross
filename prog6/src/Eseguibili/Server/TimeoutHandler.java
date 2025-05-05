@@ -13,7 +13,7 @@ import OrderBook.StopValue;
 /* Thread che gestisce il timeout dei client connessi al server. Monitora l'attività degli utenti e chiude le connessioni inattive, gestendo le eccezioni per gli utenti che attendono uno o più stop order. */
 
 public class TimeoutHandler implements Runnable{
-    private static final int TIMEOUT_MINUTES = 5;
+    private static final int TIMEOUT_MINUTES = 10;
     private static final long TIMEOUT_MILLIS = TIMEOUT_MINUTES * 60 * 1000;
     public String user = null;
     private final SharedState sharedState; // Stato condiviso con il thread Worker
@@ -60,7 +60,7 @@ public class TimeoutHandler implements Runnable{
     }
 
     public void run(){
-        while(sharedState.runningHandler){
+        while(sharedState.runningHandler.get()){
             try{
                 // Verifico se il client è inattivo
                 long currentTime = System.currentTimeMillis();
@@ -68,7 +68,7 @@ public class TimeoutHandler implements Runnable{
                     // L'utente ha superato il timeout
                     if(user == null){ // Utente non loggato
                         System.out.println("[TIMEOUTHANDLER] Client inactive for more than " + TIMEOUT_MINUTES + " minutes. Closing connection.");
-                        sharedState.activeUser = false;
+                        sharedState.activeUser.set(false);
                         break;
                     } else{
                         // Utente loggato, si controlla se è nella lista degli stopOrders
@@ -83,7 +83,7 @@ public class TimeoutHandler implements Runnable{
                         }
                         if(!contains){
                             System.out.println("[TIMEOUTHANDLER] " + user + " inactive for more than " + TIMEOUT_MINUTES + " minutes. Closing connection.");
-                            sharedState.activeUser = false;
+                            sharedState.activeUser.set(false);
                             break;
                         } else{
                             System.out.println("[TIMEOUTHANDLER] " + user + " is waiting a stopOrder. Connection remaining open.");

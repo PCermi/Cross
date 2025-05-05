@@ -76,12 +76,11 @@ public class MainClient {
 
     // Classe per condividere dati tra il thread principale e i thread di ricezione
     public static class SharedData{
-        public volatile boolean isLogged = false;          // Flag per indicare se l'utente è loggato
-        public volatile boolean isClosed = false;          // Flag per indicare se la connessione è chiusa
-        public volatile boolean loginError = false;        // Flag per indicare errori di login
-        public volatile int UDPport = 0;                   // Porta UDP assegnata dal server
-        // Flag atomico per gestire la chiusura
-        public AtomicBoolean isShuttingDown = new AtomicBoolean(false);
+        public AtomicBoolean isLogged = new AtomicBoolean(false);          // Flag per indicare se l'utente è loggato
+        public AtomicBoolean isClosed = new AtomicBoolean(false); ;        // Flag per indicare se la connessione è chiusa
+        public AtomicBoolean loginError = new AtomicBoolean(false); ;      // Flag per indicare errori di login
+        public AtomicBoolean isShuttingDown = new AtomicBoolean(false);    // Flag atomico per gestire la chiusura
+        public volatile int UDPport = 0;                                                // Porta UDP assegnata dal server
     }
 
     public static void main(String[] args) throws Exception{
@@ -135,6 +134,8 @@ public class MainClient {
                     }
                     printer.inputReceived(); // Indica che l'input è stato ricevuto
 
+                    System.out.println("Input ricevuto");
+
                     if (isValidCommand(input)){
                         // La stringa viene suddivisa
                         String command[] = input.split("[(),\\s]+");
@@ -175,12 +176,12 @@ public class MainClient {
                                 // Invio del messaggio UDP per comunicare al server la porta del client
                                 while(!udpMessage){
                                     // Il messaggio viene mandato solo se l'utente si è loggato con succcesso
-                                    if(sharedData.isLogged == true){
+                                    if(sharedData.isLogged.get() == true){
                                         sendUDPmessage(UDPsocket,printer,sharedData);
                                         udpMessage = true;
                                     }
                                     
-                                    if(sharedData.loginError == true){ //ricevuto messaggio di errore
+                                    if(sharedData.loginError.get() == true){ //ricevuto messaggio di errore
                                         break;
                                     }
                                 }
@@ -195,7 +196,7 @@ public class MainClient {
                                     out.println(message); // Invio del messaggio sullo stream
                                     
                                     // Quando il receiver mette la variabile a true chiudo il client
-                                    while(!sharedData.isClosed){Thread.sleep(100);}
+                                    while(!sharedData.isClosed.get()){Thread.sleep(100);}
 
                                     closeConnection(printer);
                                     return;
@@ -215,7 +216,7 @@ public class MainClient {
                                     printer.printMessage("invalid Size");
                                     printer.promptUser();
                                 } else {
-                                    if(!sharedData.isLogged){
+                                    if(!sharedData.isLogged.get()){
                                         printer.printMessage("You're not logged");
                                         printer.promptUser();
                                     } else {
@@ -236,7 +237,7 @@ public class MainClient {
                                     printer.printMessage("invalid Size");
                                     printer.promptUser();
                                 } else{
-                                    if(!sharedData.isLogged){
+                                    if(!sharedData.isLogged.get()){
                                         printer.printMessage("You're not logged");
                                         printer.promptUser();
                                     } else{
@@ -261,7 +262,7 @@ public class MainClient {
                                     printer.printMessage("invalid Size");
                                     printer.promptUser();
                                 } else {
-                                    if(!sharedData.isLogged){
+                                    if(!sharedData.isLogged.get()){
                                         printer.printMessage("You're not logged");
                                         printer.promptUser();
                                     } else{
@@ -278,7 +279,7 @@ public class MainClient {
                                 GsonResponseOrder obj = new GsonResponseOrder();
                                 obj.setResponseOrder(orderID);
 
-                                if(!sharedData.isLogged){
+                                if(!sharedData.isLogged.get()){
                                     printer.printMessage("You're not logged");
                                     printer.promptUser();
                                 } else{
@@ -299,7 +300,7 @@ public class MainClient {
 
                                     if(month > 0 && month <= 12 && year <= 2025){
                                        
-                                        if(!sharedData.isLogged){
+                                        if(!sharedData.isLogged.get()){
                                             printer.printMessage("You're not logged");
                                             printer.promptUser();
                                         } else{
@@ -321,10 +322,11 @@ public class MainClient {
 
                             
                             case "showOrderBook":
-                                if(!sharedData.isLogged){
+                                if(!sharedData.isLogged.get()){
                                     printer.printMessage("You're not logged");
                                     printer.promptUser();
                                 } else{
+                                    System.out.println("Ricevuto comando showOrderBook");
                                     // Creazione file GSON da inviare al server
                                     mes = new GsonMessage<>("showOrderBook", new Values()); // Creazione messaggio
                                     message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
@@ -333,7 +335,7 @@ public class MainClient {
                             break;
 
                             case "showStopOrders":
-                                if(!sharedData.isLogged){
+                                if(!sharedData.isLogged.get()){
                                     printer.printMessage("You're not logged");
                                     printer.promptUser();
                                 } else{
@@ -360,12 +362,12 @@ public class MainClient {
                         // Se si sta già chiudendo questa eccezione viene ignorata
                         break;
                     }
-                    if(!sharedData.isClosed){
+                    if(!sharedData.isClosed.get()){
                         System.err.println("[MAINCLIENT] Input interrotto: " + e.getMessage());
                         printer.promptUser();
                     }
                 } catch (Exception e){
-                    if(sharedData.isShuttingDown.get() || sharedData.isClosed){
+                    if(sharedData.isShuttingDown.get() || sharedData.isClosed.get()){
                         // Se si sta già chiudendo questa eccezione viene ignorata
                         break;
                     }
@@ -375,12 +377,12 @@ public class MainClient {
                 
             }
         } catch (SocketException e){
-            if(!sharedData.isShuttingDown.get() && !sharedData.isClosed){
+            if(!sharedData.isShuttingDown.get() && !sharedData.isClosed.get()){
                 System.err.println("[MAINCLIENT] Socket error: " + e.getMessage());
             }
             printer.promptUser();
         } catch(Exception e){
-            if(!sharedData.isShuttingDown.get() && !sharedData.isClosed){
+            if(!sharedData.isShuttingDown.get() && !sharedData.isClosed.get()){
                 System.out.println("[MAINCLIENT] Error external catch " + e.getMessage() + " Cause: " + e.getCause());
             }
             printer.promptUser();

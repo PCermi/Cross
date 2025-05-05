@@ -5,6 +5,8 @@ import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 
@@ -41,7 +43,7 @@ public class Worker implements Runnable{
     private static Gson gson = new Gson();
 
     // Flags
-    public static boolean running = true; //variabile usata per interrompere il while del worker in seguito alla chiusura del server
+    public static AtomicBoolean running = new AtomicBoolean(true); //variabile usata per interrompere il while del worker in seguito alla chiusura del server
     
 
     public Worker(Socket socket, ConcurrentHashMap <String,Tupla> userMap, OrderBook orderBook, ConcurrentSkipListMap<String,SockMapValue> socketMap, int UDPport){
@@ -55,8 +57,8 @@ public class Worker implements Runnable{
 
     // Classe usata per condividere dati tra il worker e il TimeoutHandler 
     public class SharedState{
-        public volatile boolean activeUser = true; // Dice se un utente è attivo o meno
-        public volatile boolean runningHandler = true; // Usata per interrompere l'esecuzione dell'Handler
+        public AtomicBoolean activeUser = new AtomicBoolean(true);      // Dice se un utente è attivo o meno
+        public AtomicBoolean runningHandler = new AtomicBoolean(true);  // Usata per interrompere l'esecuzione dell'Handler
         public volatile long lastActivity = System.currentTimeMillis();
         public volatile ConcurrentLinkedQueue<StopValue> stopOrders = new ConcurrentLinkedQueue<>();
     }
@@ -88,7 +90,7 @@ public class Worker implements Runnable{
                 response.setResponse("UDP",UDPport,"");
                 response.sendMessage(gson,out);
 
-                while(sharedState.activeUser && running){
+                while(sharedState.activeUser.get() && running.get()){
                     // Try-catch per catturare l'eccezione del timeout del socket
                     try{
                         // Attesa messaggio dal client
@@ -302,7 +304,8 @@ public class Worker implements Runnable{
                                         response.sendMessage(gson,out);
                                     } 
                                     // Terminazione del thread handler del timeout
-                                    sharedState.runningHandler = false;
+                                    sharedState.runningHandler.set(false);
+                                    timeout.join(); // Si attende la terminazione del TimeoutHandler
 
                                     // Chiusura comunicazione
                                     clientSocket.close();
@@ -330,10 +333,10 @@ public class Worker implements Runnable{
                                     int orderID;
                                     if(type.equals("ask")){
                                         // ORDINE DI ASK: VENDITA
-                                        orderID = orderBook.newTryAskOrder(size,price,onlineUser,socketMap);
+                                        orderID = orderBook.tryAskOrder(size,price,onlineUser,socketMap);
                                     } else{
                                         // ORDINE DI BID: ACQUISTO
-                                        orderID = orderBook.newTryBidOrder(size, price, onlineUser, socketMap);
+                                        orderID = orderBook.tryBidOrder(size, price, onlineUser, socketMap);
                                     }
                                     // Controllo della lista degli StopOrder
                                     orderBook.checkStopOrders(socketMap);
@@ -496,7 +499,7 @@ public class Worker implements Runnable{
                         } // Fine switch
                     } catch (SocketTimeoutException e){
                         // readLine() è scaduto, si verifica se il TimeoutHandler ha segnalato un timeout
-                        if(!sharedState.activeUser){
+                        if(!sharedState.activeUser.get()){
                             break;
                         }
                         // Altrimenti si continua il ciclo
@@ -506,13 +509,14 @@ public class Worker implements Runnable{
                 // Procedura di terminazione del worker
 
                 // Terminazione del thread handler
-                sharedState.runningHandler = false;
+                sharedState.runningHandler.set(false);
+                timeout.join(); // Si attende la terminazione del TimeoutHandler
 
                 String closingMessage = "";
-                if(!sharedState.activeUser) // Inattività del client
+                if(!sharedState.activeUser.get()) // Inattività del client
                     closingMessage = "Closing connection due to inactivity timeout.";
                 
-                if(!running) // Shutdown del server
+                if(!running.get()) // Shutdown del server
                     closingMessage = "Closing connection due to server shutdown.";
                 
                 if(onlineUser == null){
@@ -547,7 +551,7 @@ public class Worker implements Runnable{
     }
 
     public void shutdown(){
-        running = false;
+        running.set(false);
     }
 
     // Metodo per sincronizzare L'orderbook

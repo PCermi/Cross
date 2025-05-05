@@ -11,7 +11,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import Eseguibili.Main.MainClient.SharedData;
-import OrderBook.OrderBook;
 
 // Thread che si occupa di gestire la ricezione e l'elaborazione dei messaggi dal server.
 
@@ -63,11 +62,11 @@ public class ReceiverClient implements Runnable{
 
                         case "login":
                             if(errorMessage.equals("OK")){
-                                sharedData.isLogged = true;
-                                sharedData.loginError = false;
+                                sharedData.isLogged.set(true);
+                                sharedData.loginError.set(false);
                                 printer.printMessage("[RECEIVER]: Login completed successfully");
                             } else{
-                                sharedData.loginError = true;
+                                sharedData.loginError.set(true);
                                 printer.printMessage("[RECEIVER]: " + errorMessage);
                             }
                         break;
@@ -85,7 +84,7 @@ public class ReceiverClient implements Runnable{
                             else
                                 System.out.println(errorMessage);
                             
-                            sharedData.isClosed = true;
+                            sharedData.isClosed.set(true);
                         return;
                         
 
@@ -107,7 +106,7 @@ public class ReceiverClient implements Runnable{
 
                         case "disconnection":
                             System.out.println(errorMessage);
-                            sharedData.isClosed = true;
+                            sharedData.isClosed.set(true);
                             System.exit(0);
                         break;
                     }
@@ -125,7 +124,7 @@ public class ReceiverClient implements Runnable{
             }
         }catch (Exception e){
             printer.printMessage("[RECEIVER] Error:  " + e.getMessage() + " - Cause: " + e.getCause());
-            sharedData.isClosed = true; 
+            sharedData.isClosed.set(true); 
         }
     }
 

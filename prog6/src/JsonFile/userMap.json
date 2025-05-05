@@ -9,7 +9,7 @@
   },
   "gino": {
     "password": "psw",
-    "isLogged": true
+    "isLogged": false
   },
   "sara": {
     "password": "psw",
