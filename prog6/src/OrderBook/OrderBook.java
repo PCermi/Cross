@@ -99,9 +99,9 @@ public class OrderBook {
                             int res = tryMarketOrder(order.type,order.size,order.username,"stop", socketMap);
                             lastOrderID--; // Si decrementa lastOrderID perchè si ha già un orderID per lo stopOrder
                             if(res != -1){// L'ordine è stato elaborato con successo
-                                System.out.printf("%s's StopOrder processed successfully.\n",order.username, order.toString());
+                                System.out.printf("%s's StopOrder processed successfully. Order: %s\n",order.username, order.toString());
                             } else{
-                                System.out.printf("%s's StopOrder was processed but failed.\n",order.username, order.toString());
+                                System.out.printf("%s's StopOrder was processed but failed. Order: %s\n",order.username, order.toString());
                                 
                                 notifyUser(socketMap, order.username, order.orderID, order.type, "stop", 0, 0);
                             }
@@ -119,9 +119,9 @@ public class OrderBook {
                             int res = tryMarketOrder(order.type,order.size,order.username,"stop", socketMap);
                             lastOrderID--; // Si decrementa lastOrderID perchè si ha già un orderID per lo stopOrder
                             if(res != -1){// L'ordine è stato elaborato con successo
-                                System.out.printf("%s's StopOrder processed successfully.\n",order.username, order.toString());
+                                System.out.printf("%s's StopOrder processed successfully. Order: %s\n",order.username, order.toString());
                             } else{
-                                System.out.printf("%s's StopOrder was processed but failed.\n",order.username, order.toString());
+                                System.out.printf("%s's StopOrder was processed but failed. Order: %s\n",order.username, order.toString());
                                 
                                 notifyUser(socketMap, order.username, order.orderID, order.type, "stop", 0, 0);
                             }

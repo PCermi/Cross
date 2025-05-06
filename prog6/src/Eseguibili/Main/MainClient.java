@@ -22,7 +22,7 @@ import GsonClasses.Responses.GsonResponseOrder;
 
 public class MainClient {
     // Configurazione del client
-    public static final String configFile = "../../Configurazione/client.properties";
+    public static final String configFile = "client.properties";
     public static String hostname;          // Nome host del server
     public static int TCPport;              // Porta TCP del server
     public static int UDPport;              // Porta UDP del server
@@ -43,9 +43,9 @@ public class MainClient {
     
     // Comandi validi e messaggio di aiuto
     private static final String[] validCommands = {
-        "register\\s*\\(\\s*[a-zA-Z0-9]+\\s*,\\s*.*?\\s*\\)",
-        "updateCredentials\\s*\\(\\s*[a-zA-Z0-9]+\\s*,\\s*.*?\\s*,\\s*.*?\\s*\\)",
-        "login\\s*\\(\\s*[a-zA-Z0-9]+\\s*,\\s*.*?\\s*\\)",
+        "register\\s*\\(\\s*[a-zA-Z0-9]+\\s*,\\s*\\S(?:.*\\S)?\\s*\\)",
+        "updateCredentials\\s*\\(\\s*[a-zA-Z0-9]+\\s*,\\s*\\S(?:.*\\S)?\\s*,\\s*\\S(?:.*\\S)?\\s*\\)",
+        "login\\s*\\(\\s*[a-zA-Z0-9]+\\s*,\\s*\\S(?:.*\\S)?\\s*\\)",
         "logout\\s*\\(\\s*\\)",
         "insertMarketOrder\\s*\\(\\s*[a-zA-Z]+\\s*,\\s*\\d+\\s*\\)",
         "insertLimitOrder\\s*\\(\\s*[a-zA-Z]+\\s*,\\s*\\d+\\s*,\\s*\\d+(\\.\\d+)?\\s*\\)",
@@ -134,8 +134,6 @@ public class MainClient {
                     }
                     printer.inputReceived(); // Indica che l'input è stato ricevuto
 
-                    System.out.println("Input ricevuto");
-
                     if (isValidCommand(input)){
                         // La stringa viene suddivisa
                         String command[] = input.split("[(),\\s]+");
@@ -204,73 +202,80 @@ public class MainClient {
                             break;
 
                             case "insertLimitOrder":
-                                String type = command[1].toLowerCase();
-                                int size = Integer.parseInt(command[2]);
-                                int limitPrice = Integer.parseInt(command[3]);
+                                try{
+                                    String type = command[1].toLowerCase();
+                                    int size = Integer.parseInt(command[2]);
+                                    int limitPrice = Integer.parseInt(command[3]);
+                                    if(type.equals("ask") || type.equals("bid")){
 
-                                // Validazione dei parametri passati
-                                if(limitPrice <= 0 || limitPrice > Math.pow(2, 31)-1){
-                                    printer.printMessage("invalid LimitPrice");
-                                    printer.promptUser();
-                                } else if(size >  Math.pow(2, 31)-1){
-                                    printer.printMessage("invalid Size");
-                                    printer.promptUser();
-                                } else {
-                                    if(!sharedData.isLogged.get()){
-                                        printer.printMessage("You're not logged");
+                                        if(!sharedData.isLogged.get()){
+                                            printer.printMessage("You're not logged");
+                                            printer.promptUser();
+                                        } else {
+                                            // Creazione file GSON da inviare al server
+                                            mes = new GsonMessage<>("insertLimitOrder", new GsonLimitStopOrder(type, size, limitPrice)); // Creazione messaggio
+                                            message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
+                                            out.println(message); // Invio del messaggio sullo stream
+                                        }
+                                    } else{
+                                        printer.printMessage("Unknown order type: use 'ask' or 'bid' ");
                                         printer.promptUser();
-                                    } else {
-                                        // Creazione file GSON da inviare al server
-                                        mes = new GsonMessage<>("insertLimitOrder", new GsonLimitStopOrder(type, size, limitPrice)); // Creazione messaggio
-                                        message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
-                                        out.println(message); // Invio del messaggio sullo stream
                                     }
+                                } catch (NumberFormatException e){
+                                    printer.printMessage("invalid size or LimitPrice");
+                                    printer.promptUser();
                                 }
                             break;
 
                             case "insertMarketOrder":
-                                type = command[1].toLowerCase();
-                                size = Integer.parseInt(command[2]);
+                                try{
+                                    String type = command[1].toLowerCase();
+                                    int size = Integer.parseInt(command[2]);
 
-                                // Validazione dei parametri passati
-                                if(size >  Math.pow(2, 31)-1){
-                                    printer.printMessage("invalid Size");
-                                    printer.promptUser();
-                                } else{
-                                    if(!sharedData.isLogged.get()){
-                                        printer.printMessage("You're not logged");
-                                        printer.promptUser();
+                                    if(type.equals("ask") || type.equals("bid")){
+                                        if(!sharedData.isLogged.get()){
+                                            printer.printMessage("You're not logged");
+                                            printer.promptUser();
+                                        } else{
+                                            // Creazione file GSON da inviare al server
+                                            mes = new GsonMessage<>("insertMarketOrder", new GsonMarketOrder(type, size)); // Creazione messaggio
+                                            message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
+                                            out.println(message); // Invio del messaggio sullo stream
+                                        }
                                     } else{
-                                        // Creazione file GSON da inviare al server
-                                        mes = new GsonMessage<>("insertMarketOrder", new GsonMarketOrder(type, size)); // Creazione messaggio
-                                        message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
-                                        out.println(message); // Invio del messaggio sullo stream
+                                        printer.printMessage("Unknown order type: use 'ask' or 'bid' ");
+                                        printer.promptUser();
                                     }
+                                    
+                                } catch (NumberFormatException e){
+                                    printer.printMessage("invalid size");
+                                    printer.promptUser();
                                 }
                             break;
                             
                             case "insertStopOrder":
-                                type = command[1].toLowerCase();
-                                size = Integer.parseInt(command[2]);
-                                int stopPrice = Integer.parseInt(command[3]);
+                                try{
+                                    String type = command[1].toLowerCase();
+                                    int size = Integer.parseInt(command[2]);
+                                    int stopPrice = Integer.parseInt(command[3]);
 
-                                // Validazione dei parametri passati
-                                if(stopPrice <= 0 || stopPrice > Math.pow(2, 31)-1){
-                                    printer.printMessage("invalid stopPrice");
-                                    printer.promptUser();
-                                } else if(size >  Math.pow(2, 31)-1){
-                                    printer.printMessage("invalid Size");
-                                    printer.promptUser();
-                                } else {
-                                    if(!sharedData.isLogged.get()){
-                                        printer.printMessage("You're not logged");
-                                        printer.promptUser();
+                                    if(type.equals("ask") || type.equals("bid")){
+                                        if(!sharedData.isLogged.get()){
+                                            printer.printMessage("You're not logged");
+                                            printer.promptUser();
+                                        } else{
+                                            // Creazione file GSON da inviare al server
+                                            mes = new GsonMessage<>("insertStopOrder", new GsonLimitStopOrder(type, size, stopPrice)); // Creazione messaggio
+                                            message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
+                                            out.println(message); // Invio del messaggio sullo stream
+                                        }  
                                     } else{
-                                        // Creazione file GSON da inviare al server
-                                        mes = new GsonMessage<>("insertStopOrder", new GsonLimitStopOrder(type, size, stopPrice)); // Creazione messaggio
-                                        message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
-                                        out.println(message); // Invio del messaggio sullo stream
-                                    }  
+                                        printer.printMessage("Unknown order type: use 'ask' or 'bid' ");
+                                        printer.promptUser();
+                                    }
+                                } catch (NumberFormatException e){
+                                    printer.printMessage("invalid size or StopPrice");
+                                    printer.promptUser();
                                 }
                             break;
 
@@ -326,7 +331,6 @@ public class MainClient {
                                     printer.printMessage("You're not logged");
                                     printer.promptUser();
                                 } else{
-                                    System.out.println("Ricevuto comando showOrderBook");
                                     // Creazione file GSON da inviare al server
                                     mes = new GsonMessage<>("showOrderBook", new Values()); // Creazione messaggio
                                     message = gson.toJson(mes); // Creazione dell'oggetto Gson da mandare
@@ -371,7 +375,7 @@ public class MainClient {
                         // Se si sta già chiudendo questa eccezione viene ignorata
                         break;
                     }
-                    System.err.println("[MAINCLIENT] Error internal catch " + e.getMessage() + " Cause: " + e.getCause());
+                    System.err.println("[MAINCLIENT] Error internal catch: " + e.getMessage() + " Cause: " + e.getCause());
                     printer.promptUser();
                 }
                 
@@ -387,7 +391,8 @@ public class MainClient {
             }
             printer.promptUser();
         } finally {
-            if (!sharedData.isShuttingDown.get()) {
+            if(!sharedData.isShuttingDown.get()){
+                System.out.println("Closing Connection");
                 sharedData.isShuttingDown.set(true);
                 closeConnection(printer);
             }
@@ -421,7 +426,6 @@ public class MainClient {
 
         } catch (Exception e) {
             System.err.println("[MAINCLIENT] Error while closing connection: " + e.getMessage());
-            printer.promptUser();
         }
     }
 
@@ -456,7 +460,7 @@ public class MainClient {
 
     // Metodo che legge il file di configurazione del client
     public static void readConfig() throws FileNotFoundException, IOException{
-        InputStream input = MainClient.class.getResourceAsStream(configFile);
+        InputStream input = new FileInputStream(configFile);
         Properties prop = new Properties();
         prop.load(input);
         TCPport = Integer.parseInt(prop.getProperty("TCPport"));

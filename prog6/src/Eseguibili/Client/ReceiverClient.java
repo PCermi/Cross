@@ -55,32 +55,32 @@ public class ReceiverClient implements Runnable{
                     switch(type){
                         case "register":
                             if(errorMessage.equals("OK"))
-                                printer.printMessage("[RECEIVER]: Registration completed successfully");
+                                printer.printMessage("Registration completed successfully");
                             else
-                                printer.printMessage("[RECEIVER]: " + errorMessage);
+                                printer.printMessage(errorMessage);
                         break;
 
                         case "login":
                             if(errorMessage.equals("OK")){
                                 sharedData.isLogged.set(true);
                                 sharedData.loginError.set(false);
-                                printer.printMessage("[RECEIVER]: Login completed successfully");
+                                printer.printMessage("Login completed successfully");
                             } else{
                                 sharedData.loginError.set(true);
-                                printer.printMessage("[RECEIVER]: " + errorMessage);
+                                printer.printMessage(errorMessage);
                             }
                         break;
 
                         case "updateCredentials":
                             if(errorMessage.equals("OK"))
-                                printer.printMessage("[RECEIVER]: Your credentials have been successfully updated.");
+                                printer.printMessage("Your credentials have been successfully updated.");
                             else
-                                printer.printMessage("[RECEIVER]: " + errorMessage);
+                                printer.printMessage(errorMessage);
                         break;
 
                         case "logout":
                             if(errorMessage.equals("OK"))
-                                System.out.println("[RECEIVER]: Logout completed. Thank you for using our service");
+                                System.out.println("Logout completed. Thank you for using our service");
                             else
                                 System.out.println(errorMessage);
                             
@@ -90,9 +90,9 @@ public class ReceiverClient implements Runnable{
 
                         case "cancelOrder":
                             if(errorMessage.equals("OK"))
-                                printer.printMessage("[RECEIVER]: Cancellation completed for this order");
+                                printer.printMessage("Cancellation completed for this order");
                             else
-                                printer.printMessage("[RECEIVER]: Cancellation not available for this order");
+                                printer.printMessage("Cancellation not available for this order");
                         break;
 
                         case "getPriceHistory":
@@ -116,15 +116,15 @@ public class ReceiverClient implements Runnable{
 
                     int orderID = obj.get("orderID").getAsInt();
                     if(orderID != -1)
-                        printer.printMessage("[RECEIVER]: your order ID is: " + orderID);
+                        printer.printMessage("Your order ID is: " + orderID);
                     else
-                        printer.printMessage("[RECEIVER]: Ops! Something went wrong");
+                        printer.printMessage("Ops! Something went wrong");
                     printer.promptUser();
                 }
             }
         }catch (Exception e){
             printer.printMessage("[RECEIVER] Error:  " + e.getMessage() + " - Cause: " + e.getCause());
-            sharedData.isClosed.set(true); 
+            sharedData.isClosed.set(true);
         }
     }
 

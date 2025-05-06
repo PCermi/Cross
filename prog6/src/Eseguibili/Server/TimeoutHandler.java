@@ -95,7 +95,7 @@ public class TimeoutHandler implements Runnable{
                 Thread.sleep(20000);
 
             } catch (Exception e){
-                System.err.println("[TIMEOUTHANDLER]: " + e.getMessage() + " " + e.getCause());
+                System.err.println("[TIMEOUTHANDLER] Error: " + e.getMessage() + " - Cause: " + e.getCause());
             }
         }
         System.out.println("[TIMEOUTHANDLER] Handler of " + user + " Terminated");

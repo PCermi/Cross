@@ -34,7 +34,7 @@ public class GsonResponse{
     }
 
     public String toString() {
-        return "{response='" + this.response + "', errorMessage='" + this.errorMessage + "}";
+        return "{response= " + this.response + ", errorMessage= " + this.errorMessage + "}";
     }
     
 }

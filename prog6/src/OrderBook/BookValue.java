@@ -15,6 +15,6 @@ public class BookValue{
     }
 
     public String toString(){
-        return "{size =" + size + ", total =" + total + ", userList =" + userList + "}";
+        return "{size = " + size + ", total = " + total + ", userList = " + userList + "}";
     }
 }

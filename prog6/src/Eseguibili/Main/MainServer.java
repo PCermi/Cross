@@ -15,7 +15,7 @@ creare thread worker per ogni client e gestire lo shutdown del sistema. */
 
 public class MainServer{
     // Socket e stream
-    public static final String configFile = "../../Configurazione/server.properties";
+    public static final String configFile = "server.properties";
     public static int TCPport;              // Porta TCP per le connessioni client
     public static int UDPport;              // Porta base UDP per le comunicazioni asincrone
     public static String hostname;          // Nome host del server
@@ -172,7 +172,6 @@ public class MainServer{
 
         // Si notificano tutti i worker della chiusura imminente
         if(!workerList.isEmpty()){
-            System.out.println("[MAINSERVER] Notifying all users...");
             for(Worker worker : workerList){
                 worker.shutdown();
             }
@@ -190,7 +189,7 @@ public class MainServer{
 
     // Metodo che legge il file di configurazione del server
     public static void readConfig() throws FileNotFoundException, IOException{
-        InputStream input = MainServer.class.getResourceAsStream(configFile);
+        InputStream input = new FileInputStream(configFile);
         Properties prop = new Properties();
         prop.load(input);
         TCPport = Integer.parseInt(prop.getProperty("TCPport"));

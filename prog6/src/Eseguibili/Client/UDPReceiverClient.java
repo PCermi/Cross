@@ -45,13 +45,13 @@ public class UDPReceiverClient implements Runnable{
 
                 // Stampa della stringa di notifica
                 if(size == 0 && price == 0){
-                    printer.printMessage("Your " + orderType + " order with ID "+ orderID + " of type " + type + " has been processed but has failed");
+                    printer.printMessage("\nYour " + orderType + " order with ID "+ orderID + " of type " + type + " has been processed but has failed");
                 } else{
-                    printer.printMessage("Your " + orderType + " order with ID "+ orderID + " of type " + type + " has been processed with size " + size + " and price " + price);
+                    printer.printMessage("\nYour " + orderType + " order with ID "+ orderID + " of type " + type + " has been processed with size " + size + " and price " + price);
                 }
 
             } catch(Exception e){
-                printer.printMessage("[UDPRECEIVER] Error: " + e.getMessage() + "\nCause: %s" + e.getCause());
+                printer.printMessage("[UDPRECEIVER] Error: " + e.getMessage() + " - Cause: %s" + e.getCause());
                 break;
             }
         }

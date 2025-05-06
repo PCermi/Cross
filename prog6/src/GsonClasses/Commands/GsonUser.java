@@ -29,6 +29,6 @@ public class GsonUser extends Values{
    }
 
    public String toString() {
-      return "{username='" + this.username + "', password='" + this.password + "}";
+      return "{username= " + this.username + ", password= " + this.password + "}";
    }
 }

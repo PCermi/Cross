@@ -64,7 +64,7 @@ public class Worker implements Runnable{
     }
 
     public void run(){
-        System.out.printf("[WORKER %s] - serving a client\n",Thread.currentThread().getName());
+        System.out.printf("[WORKER %s] serving a client\n",Thread.currentThread().getName());
 
         SharedState sharedState = new SharedState();
 
@@ -354,7 +354,7 @@ public class Worker implements Runnable{
                                     responseOrder.setResponseOrder(orderID);
                                     responseOrder.sendMessage(gson,out);
                                 } catch (Exception e){
-                                    System.out.println("[WORKER]: Error in LimitOrder: " + e.getMessage());
+                                    System.out.println("[WORKER] Error in LimitOrder: " + e.getMessage());
 
                                     // Invio del messaggio al client con il codice di errore
                                     responseOrder.setResponseOrder(-1);
@@ -481,7 +481,7 @@ public class Worker implements Runnable{
                                     
                                     // Estrazione dei valori da values
                                     String date = valuesH.getDate();
-                                    System.out.printf("ricevuto getPriceHistory con date: %s\n",date);
+                                    System.out.println(onlineUser + " asked for the price history from " + date);
 
                                     String tradeInfo = readHistory(date);
 
@@ -543,7 +543,7 @@ public class Worker implements Runnable{
                 return;
 
             } catch (Exception e){ // Fine try with resource TCP
-                System.err.printf("[WORKER] Error in try TCP: %s %s\n",e.getMessage(),e.getCause());
+                System.err.println("[WORKER] Error in try TCP: " + e.getMessage() + " - Cause: " + e.getCause());
             }
         } catch (IOException e) { // Fine try with resource UDP
             System.err.println("[Worker] Error in try UDP: " + e.getMessage());
@@ -676,7 +676,7 @@ public class Worker implements Runnable{
             }
 
         } catch (Exception e){
-            System.err.printf("[WORKER]: updateJsonOrderBook %s \n",e.getMessage());
+            System.err.println("[WORKER] updateJsonOrderBook " + e.getMessage());
         }
     }
 }

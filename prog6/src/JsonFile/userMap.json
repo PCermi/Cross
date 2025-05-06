@@ -3,19 +3,11 @@
     "password": "psw",
     "isLogged": false
   },
-  "martins": {
-    "password": "psw",
-    "isLogged": false
-  },
   "gino": {
     "password": "psw",
     "isLogged": false
   },
   "sara": {
-    "password": "psw",
-    "isLogged": false
-  },
-  "pluto": {
     "password": "psw",
     "isLogged": false
   },

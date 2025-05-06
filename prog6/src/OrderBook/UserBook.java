@@ -35,11 +35,6 @@ public class UserBook{
    }
 
    public String toString(){
-      return "UserBook{ " +
-              " orderID=" + orderID +
-              ", username=" + username +
-              ", size=" + size +
-              ", date=" + date +
-              " }";
+      return "UserBook{ " + " orderID=" + orderID + ", username=" + username + ", size=" + size + ", date=" + date + " }";
   }
 }

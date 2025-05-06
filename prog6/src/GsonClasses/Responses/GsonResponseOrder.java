@@ -24,6 +24,6 @@ public class GsonResponseOrder extends Values{
     }
 
     public String toString() {
-        return "{orderID=" + this.orderID + "}";
+        return "{orderID= " + this.orderID + "}";
      }
 }
