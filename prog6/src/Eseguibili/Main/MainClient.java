@@ -129,7 +129,7 @@ public class MainClient {
                     
                     // Si legge da riga di comando
                     String input = scanner.nextLine();
-                    if (input == null || input.isEmpty()) {
+                    if (input == null || input.isEmpty()){
                         continue;
                     }
                     printer.inputReceived(); // Indica che l'input è stato ricevuto
@@ -390,13 +390,14 @@ public class MainClient {
                 System.out.println("[MAINCLIENT] Error external catch " + e.getMessage() + " Cause: " + e.getCause());
             }
             printer.promptUser();
-        } finally {
-            if(!sharedData.isShuttingDown.get()){
-                System.out.println("Closing Connection");
-                sharedData.isShuttingDown.set(true);
-                closeConnection(printer);
-            }
         }
+        
+        if(!sharedData.isShuttingDown.get()){
+            System.out.println("Closing Connection");
+            sharedData.isShuttingDown.set(true);
+            closeConnection(printer);
+        }
+        
     }
 
     // Metodo che chiude tutti i socket e i thread in modo sicuro
@@ -406,14 +407,14 @@ public class MainClient {
             if(receiver != null && receiver.isAlive()){
                 receiver.interrupt();
                 // Si da al thread un po' di tempo per terminare in modo pulito
-                try { receiver.join(500); } catch (InterruptedException ignored) {}
+                try { receiver.join(500); } catch (InterruptedException ignored){}
             }
 
             // Si interrompe il thread receiver UDP
             if(UDPreceiver != null && UDPreceiver.isAlive()){
                 UDPreceiver.interrupt();
                 // Si da al thread un po' di tempo per terminare in modo pulito
-                try { UDPreceiver.join(500); } catch (InterruptedException ignored) {}
+                try { UDPreceiver.join(500); } catch (InterruptedException ignored){}
             }
             
             // Vengono chiusi il socket e gli stream
@@ -442,7 +443,7 @@ public class MainClient {
             UDPreceiver = new Thread (new UDPReceiverClient(UDPsocket,in,printer));
             UDPreceiver.start();
 
-        }catch (IOException e) {
+        }catch (IOException e){
             System.err.println("Error while sending the UDP message: " + e.getMessage());
             printer.promptUser();
         }

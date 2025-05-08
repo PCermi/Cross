@@ -91,8 +91,8 @@ public class TimeoutHandler implements Runnable{
                     }
                 }
 
-                // Controllo eseguito ogni 20 secondi
-                Thread.sleep(20000);
+                // Controllo eseguito ogni 5 secondi
+                Thread.sleep(5000);
 
             } catch (Exception e){
                 System.err.println("[TIMEOUTHANDLER] Error: " + e.getMessage() + " - Cause: " + e.getCause());

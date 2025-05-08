@@ -71,7 +71,6 @@ public class Worker implements Runnable{
         // Creazione del thread che gestisce il timeout
         handler = new TimeoutHandler(sharedState);
         Thread timeout = new Thread(handler);
-        timeout.setDaemon(true);
         timeout.start();
 
         // Sincronizzazione degli stopOrder dell'handler con quelli dell'orderBook
@@ -146,9 +145,10 @@ public class Worker implements Runnable{
                                 }catch (Exception e){
                                     response.setResponse("register",103,e.getMessage());
                                     response.sendMessage(gson,out);
-                                } finally{
-                                    username = null;
                                 }
+                                
+                                username = null;
+                                
                             break;
 
                             case "updateCredentials":
