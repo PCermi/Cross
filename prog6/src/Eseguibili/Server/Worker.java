@@ -307,6 +307,9 @@ public class Worker implements Runnable{
                                     sharedState.runningHandler.set(false);
                                     timeout.join(); // Si attende la terminazione del TimeoutHandler
 
+                                    // Si rimuove il worker dalla lista di MainServer
+                                    MainServer.workerList.remove(this);
+
                                     // Chiusura comunicazione
                                     clientSocket.close();
                                     return;
@@ -537,6 +540,8 @@ public class Worker implements Runnable{
                     response.setResponse("disconnection",100,closingMessage);
                     response.sendMessage(gson,out);
                 }
+                // Si rimuove il worker dalla lista di MainServer
+                MainServer.workerList.remove(this);
 
                 // Chiusura comunicazione
                 clientSocket.close();
@@ -552,6 +557,7 @@ public class Worker implements Runnable{
 
     public void shutdown(){
         running.set(false);
+        System.out.println("Aggiornata variabile running di " + onlineUser +": " + running.get());
     }
 
     // Metodo per sincronizzare L'orderbook

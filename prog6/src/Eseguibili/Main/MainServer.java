@@ -171,6 +171,7 @@ public class MainServer{
         }
 
         // Si notificano tutti i worker della chiusura imminente
+        System.out.println("notifico workers: " + workerList.toString());
         if(!workerList.isEmpty()){
             for(Worker worker : workerList){
                 worker.shutdown();
@@ -181,10 +182,10 @@ public class MainServer{
         pool.shutdown();
         try{
             if(!pool.awaitTermination(maxDelay,TimeUnit.MILLISECONDS))
-            pool.shutdownNow();
-        } catch (InterruptedException e) {pool.shutdownNow();}
+                pool.shutdownNow();
+        } catch (InterruptedException e){pool.shutdownNow();}
 
-        System.out.println("[MAINSERVER] Server terminated correctly");
+        System.out.println("Server terminated correctly");
     }
 
     // Metodo che legge il file di configurazione del server

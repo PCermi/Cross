@@ -123,7 +123,7 @@ public class ReceiverClient implements Runnable{
                 }
             }
         }catch (Exception e){
-            printer.printMessage("[RECEIVER] Error:  " + e.getMessage() + " - Cause: " + e.getCause());
+            printer.printMessage("[RECEIVER] Error:  " + e.getMessage() + " - Cause: " + e.getCause() + " - Class: " + e.getClass());
             sharedData.isClosed.set(true);
         }
     }
