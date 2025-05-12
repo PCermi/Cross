@@ -498,7 +498,7 @@ public class Worker implements Runnable{
                             break;
 
                             default:
-                                System.out.println("[Worker] Comand received not found");
+                                System.out.println("[Worker] Command received not found");
                         } // Fine switch
                     } catch (SocketTimeoutException e){
                         // readLine() è scaduto, si verifica se il TimeoutHandler ha segnalato un timeout
@@ -557,7 +557,6 @@ public class Worker implements Runnable{
 
     public void shutdown(){
         running.set(false);
-        System.out.println("Aggiornata variabile running di " + onlineUser +": " + running.get());
     }
 
     // Metodo per sincronizzare L'orderbook

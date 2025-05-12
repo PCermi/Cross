@@ -171,7 +171,6 @@ public class MainServer{
         }
 
         // Si notificano tutti i worker della chiusura imminente
-        System.out.println("notifico workers: " + workerList.toString());
         if(!workerList.isEmpty()){
             for(Worker worker : workerList){
                 worker.shutdown();

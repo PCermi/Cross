@@ -25,7 +25,6 @@ public class MainClient {
     public static final String configFile = "client.properties";
     public static String hostname;          // Nome host del server
     public static int TCPport;              // Porta TCP del server
-    public static int UDPport;              // Porta UDP del server
     
     // Socket e stream
     private static Socket TCPsocket;
@@ -91,7 +90,7 @@ public class MainClient {
         // Creazione del thread per stampare sulla CLI
         Printer printer = new Printer();
 
-        try(DatagramSocket UDPsocket = new DatagramSocket(0)){
+        try(DatagramSocket UDPsocket = new DatagramSocket()){
 
             // Apertura socket TCP per connettersi al server
             TCPsocket = new Socket(hostname,TCPport);
@@ -465,7 +464,6 @@ public class MainClient {
         Properties prop = new Properties();
         prop.load(input);
         TCPport = Integer.parseInt(prop.getProperty("TCPport"));
-        UDPport = Integer.parseInt(prop.getProperty("UDPport"));
         hostname = prop.getProperty("hostname");
         input.close();
     }
