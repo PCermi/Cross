@@ -1,0 +1,33 @@
+{
+  "askMap": {
+    "20000": {
+      "size": 3,
+      "total": 60000,
+      "userList": [
+        {
+          "size": 3,
+          "username": "mattia",
+          "orderID": 1,
+          "date": "13/05/2025 12:00:47"
+        }
+      ]
+    }
+  },
+  "spread": -10000,
+  "lastOrderID": 7,
+  "stopOrders": [],
+  "bidMap": {
+    "10000": {
+      "size": 1,
+      "total": 10000,
+      "userList": [
+        {
+          "size": 1,
+          "username": "sara",
+          "orderID": 7,
+          "date": "21/05/2025 18:58:19"
+        }
+      ]
+    }
+  }
+}
